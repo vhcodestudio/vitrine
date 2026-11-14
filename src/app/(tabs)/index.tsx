@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { router } from "expo-router";
+import Animated, { FadeInDown, LinearTransition } from "react-native-reanimated";
 import { products, money, type Category } from "../../domain";
 import { useStore } from "../../store";
 import { colors, Icon, images, Screen, styles } from "../../ui";
@@ -102,8 +103,8 @@ export default function Catalog() {
         </View>
       ) : (
         <View style={s.grid}>
-          {visible.map((p) => (
-            <View key={p.id} style={s.product}>
+          {visible.map((p, idx) => (
+            <Animated.View key={p.id} style={s.product} entering={FadeInDown.delay(idx * 70).springify()} layout={LinearTransition.springify()}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Ver ${p.name}`}
@@ -157,7 +158,7 @@ export default function Catalog() {
                   {data.cart[p.id]} no carrinho
                 </Text>
               ) : null}
-            </View>
+            </Animated.View>
           ))}
         </View>
       )}

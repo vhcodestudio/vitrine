@@ -2,7 +2,6 @@ import Feather from "@expo/vector-icons/Feather";
 import {
   StyleSheet,
   Text,
-  View,
   Pressable,
   ScrollView,
   type ViewStyle,
@@ -10,16 +9,18 @@ import {
   type ColorValue,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { useStore } from "./store";
+// Vitrine v2: ceramic-studio palette (clay + sand) for the Casa Lume demo store.
 export const colors = {
-  ink: "#302239",
-  plum: "#64366E",
-  muted: "#706375",
-  lavender: "#EEE7F5",
-  paper: "#FBFAFD",
-  border: "#E4DEE9",
+  ink: "#2A1E17",
+  plum: "#B4532F",
+  muted: "#7A6A5E",
+  lavender: "#F4E9DD",
+  paper: "#FBF7F1",
+  border: "#EADFD2",
   white: "#FFFFFF",
-  green: "#226744",
+  green: "#2F6B47",
   red: "#A12B38",
 };
 export const images = {
@@ -50,26 +51,26 @@ export function Button({
   secondary?: boolean;
   disabled?: boolean;
 }) {
+  const scale = useSharedValue(1);
+  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
   return (
-    <Pressable
+    <AnimatedPressable
       accessibilityRole="button"
       accessibilityLabel={label}
       disabled={disabled}
       accessibilityState={{ disabled }}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.button,
-        secondary && styles.secondary,
-        disabled && { opacity: 0.5 },
-        pressed && { opacity: 0.8 },
-      ]}
+      onPressIn={() => { scale.set(withSpring(0.95, { damping: 14, stiffness: 320 })); }}
+      onPressOut={() => { scale.set(withSpring(1, { damping: 10, stiffness: 260 })); }}
+      style={[styles.button, secondary && styles.secondary, disabled && { opacity: 0.5 }, pressStyle]}
     >
       <Text style={[styles.buttonText, secondary && { color: colors.plum }]}>
         {label}
       </Text>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export function Screen({
   title,
   subtitle,
@@ -90,12 +91,12 @@ export function Screen({
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.screen, style]}
       >
-        <View>
+        <Animated.View entering={FadeInDown.duration(500).springify()}>
           <Text accessibilityRole="header" style={styles.title}>
             {title}
           </Text>
           {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-        </View>
+        </Animated.View>
         {!ready ? (
           <Text accessibilityLiveRegion="polite">Carregando seus dados…</Text>
         ) : null}
@@ -120,9 +121,9 @@ export const styles = StyleSheet.create({
     alignSelf: "center",
   },
   title: {
-    fontSize: 30,
-    fontWeight: "700",
-    letterSpacing: -1,
+    fontSize: 34,
+    fontWeight: "800",
+    letterSpacing: -1.4,
     color: colors.ink,
   },
   subtitle: { color: colors.muted, lineHeight: 22, fontSize: 14, marginTop: 6 },
@@ -144,7 +145,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     backgroundColor: colors.plum,
-    borderRadius: 14,
+    borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
   },
