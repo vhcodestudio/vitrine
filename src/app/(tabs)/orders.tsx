@@ -1,6 +1,7 @@
 import { Text, View } from "react-native";
 import { router } from "expo-router";
-import { money, type OrderStatus } from "../../domain";
+import { products, type OrderStatus } from "../../domain";
+import { useLang } from "../../i18n";
 import { useStore } from "../../store";
 import { Button, colors, Icon, Screen, styles } from "../../ui";
 const stages: OrderStatus[] = [
@@ -10,24 +11,26 @@ const stages: OrderStatus[] = [
 ];
 export default function OrdersScreen() {
   const { data, advance, busy } = useStore();
+  const { t: d, money, date, productText } = useLang();
+  const t = d.orders;
+  const itemName = (id: string, fallback: string) => { const p = products.find((x) => x.id === id); return p ? productText(id, p).name : fallback; };
   return (
     <Screen
-      title="Seus pedidos"
-      subtitle="Do primeiro toque à próxima retirada."
+      title={t.title}
+      subtitle={t.subtitle}
     >
       <Text style={styles.note}>
-        Acompanhamento simulado. Você controla o status para explorar a
-        experiência da loja.
+        {t.note}
       </Text>
       {!data.orders.length ? (
         <View style={styles.empty}>
           <Icon name="package" size={44} />
-          <Text style={styles.heading}>Ainda sem pedidos</Text>
+          <Text style={styles.heading}>{t.empty}</Text>
           <Text style={styles.body}>
-            Monte um carrinho para experimentar o fluxo completo.
+            {t.emptyText}
           </Text>
           <Button
-            label="Explorar catálogo"
+            label={t.explore}
             onPress={() => router.replace("/")}
           />
         </View>
@@ -47,13 +50,13 @@ export default function OrdersScreen() {
             <View style={styles.row}>
               <Text style={styles.label}>{order.id}</Text>
               <Text style={styles.body}>
-                {new Date(order.createdAt).toLocaleDateString("pt-BR")}
+                {date(order.createdAt)}
               </Text>
             </View>
-            <Text style={styles.heading}>{order.status}</Text>
+            <Text style={styles.heading}>{d.status[order.status]}</Text>
             <View
               style={{ flexDirection: "row", gap: 6 }}
-              accessibilityLabel={`Status: ${order.status}`}
+              accessibilityLabel={`Status: ${d.status[order.status]}`}
             >
               {stages.map((stage, index) => (
                 <View
@@ -70,11 +73,11 @@ export default function OrdersScreen() {
                 />
               ))}
             </View>
-            <Text style={styles.body}>Retirada por {order.customer}</Text>
+            <Text style={styles.body}>{t.pickupBy(order.customer)}</Text>
             {order.items.map((item) => (
               <View key={item.productId} style={styles.row}>
                 <Text style={[styles.body, { flex: 1 }]}>
-                  {item.quantity} × {item.name}
+                  {item.quantity} × {itemName(item.productId, item.name)}
                 </Text>
                 <Text style={styles.body}>
                   {money(item.quantity * item.price)}
@@ -82,19 +85,19 @@ export default function OrdersScreen() {
               </View>
             ))}
             {order.note ? (
-              <Text style={styles.body}>Observação: {order.note}</Text>
+              <Text style={styles.body}>{t.noteLabel(order.note)}</Text>
             ) : null}
             <View style={styles.divider} />
             <View style={styles.row}>
-              <Text style={styles.label}>Total demonstrativo</Text>
+              <Text style={styles.label}>{t.total}</Text>
               <Text style={styles.heading}>{money(order.total)}</Text>
             </View>
             {order.status !== "Pronto para retirada" ? (
               <Button
                 label={
                   order.status === "Recebido"
-                    ? "Simular preparo"
-                    : "Simular pedido pronto"
+                    ? t.prepare
+                    : t.ready
                 }
                 secondary
                 disabled={busy}
@@ -102,8 +105,7 @@ export default function OrdersScreen() {
               />
             ) : (
               <Text style={styles.note}>
-                Tudo pronto! Esta é uma simulação, não uma confirmação real de
-                retirada.
+                {t.done}
               </Text>
             )}
           </View>

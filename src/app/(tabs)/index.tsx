@@ -10,23 +10,26 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import Animated, { FadeInDown, LinearTransition } from "react-native-reanimated";
-import { products, money, type Category } from "../../domain";
+import { products, type Category } from "../../domain";
 import { useStore } from "../../store";
 import { colors, Icon, images, Screen, styles } from "../../ui";
+import { useLang } from "../../i18n";
 const categories: Category[] = ["Todos", "Cerâmica", "Decoração", "Presentes"];
 export default function Catalog() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<Category>("Todos");
   const { quantity, busy, ready, data } = useStore();
-  const visible = products.filter(
-    (p) =>
-      (category === "Todos" || p.category === category) &&
-      p.name
-        .toLocaleLowerCase("pt-BR")
-        .includes(query.trim().toLocaleLowerCase("pt-BR")),
-  );
+  const { t: d, productText, money } = useLang();
+  const t = d.catalog;
+  const visible = products
+    .map((p) => ({ ...p, ...productText(p.id, p) }))
+    .filter(
+      (p) =>
+        (category === "Todos" || p.category === category) &&
+        p.name.toLocaleLowerCase(d.locale).includes(query.trim().toLocaleLowerCase(d.locale)),
+    );
   return (
-    <Screen title="Vitrine" subtitle="Pequenas lojas. Boas descobertas.">
+    <Screen title="Vitrine" subtitle={t.subtitle}>
       <View style={s.shopLine}>
         <View style={s.mark}>
           <Icon name="sun" color={colors.plum} />
@@ -34,16 +37,16 @@ export default function Catalog() {
         <View>
           <Text style={s.shopName}>Casa Lume</Text>
           <Text style={s.caption}>
-            Cerâmica & presentes · loja demonstrativa
+            {t.tagline}
           </Text>
         </View>
       </View>
       <View style={s.hero}>
         <View style={s.heroCopy}>
-          <Text style={s.heroLabel}>Feito para ficar.</Text>
-          <Text style={s.heroTitle}>Peças para os seus rituais.</Text>
+          <Text style={s.heroLabel}>{t.heroLabel}</Text>
+          <Text style={s.heroTitle}>{t.heroTitle}</Text>
           <Text style={s.heroBody}>
-            Cerâmica e presentes para dar outro ritmo ao dia.
+            {t.heroBody}
           </Text>
         </View>
         <View style={s.heroImage}>
@@ -51,15 +54,15 @@ export default function Catalog() {
             source={images.vase}
             style={{ flex: 1, width: "100%" }}
             resizeMode="cover"
-            accessibilityLabel="Vaso de cerâmica com flores"
+            accessibilityLabel={t.heroAlt}
           />
         </View>
       </View>
       <View style={s.search}>
         <Icon name="search" size={20} />
         <TextInput
-          accessibilityLabel="Buscar produtos"
-          placeholder="O que você está procurando?"
+          accessibilityLabel={t.search}
+          placeholder={t.searchPh}
           placeholderTextColor={colors.muted}
           value={query}
           onChangeText={setQuery}
@@ -70,13 +73,13 @@ export default function Catalog() {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={{ gap: 8 }}
-        accessibilityLabel="Categorias"
+        accessibilityLabel={t.categories}
       >
         {categories.map((item) => (
           <Pressable
             key={item}
             accessibilityRole="button"
-            accessibilityLabel={item}
+            accessibilityLabel={d.categories[item]}
             accessibilityState={{ selected: item === category }}
             onPress={() => setCategory(item)}
             style={[s.chip, item === category && s.chipActive]}
@@ -84,21 +87,21 @@ export default function Catalog() {
             <Text
               style={[s.chipText, item === category && { color: colors.white }]}
             >
-              {item}
+              {d.categories[item]}
             </Text>
           </Pressable>
         ))}
       </ScrollView>
       <View style={styles.row}>
-        <Text style={styles.heading}>Escolha com carinho</Text>
-        <Text style={s.caption}>{visible.length} peças</Text>
+        <Text style={styles.heading}>{t.pick}</Text>
+        <Text style={s.caption}>{t.pieces(visible.length)}</Text>
       </View>
       {!visible.length ? (
         <View style={styles.empty}>
           <Icon name="search" size={32} />
-          <Text style={styles.heading}>Nenhuma peça por aqui</Text>
+          <Text style={styles.heading}>{t.none}</Text>
           <Text style={styles.body}>
-            Tente outro nome ou escolha outra categoria.
+            {t.noneText}
           </Text>
         </View>
       ) : (
@@ -107,7 +110,7 @@ export default function Catalog() {
             <Animated.View key={p.id} style={s.product} entering={FadeInDown.delay(idx * 70).springify()} layout={LinearTransition.springify()}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Ver ${p.name}`}
+                accessibilityLabel={t.see(p.name)}
                 onPress={() => router.push(`/product/${p.id}`)}
               >
                 <Image
@@ -116,7 +119,7 @@ export default function Catalog() {
                   accessibilityLabel={p.name}
                 />
                 <View style={s.productCopy}>
-                  <Text style={s.caption}>{p.category}</Text>
+                  <Text style={s.caption}>{d.categories[p.category]}</Text>
                   <Text style={s.productName}>{p.name}</Text>
                 </View>
               </Pressable>
@@ -124,7 +127,7 @@ export default function Catalog() {
                 <Text style={s.price}>{money(p.price)}</Text>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Adicionar ${p.name}`}
+                  accessibilityLabel={t.add(p.name)}
                   accessibilityState={{
                     disabled:
                       !p.available ||
@@ -152,10 +155,10 @@ export default function Catalog() {
                 </Pressable>
               </View>
               {!p.available ? (
-                <Text style={s.unavailable}>Esgotado</Text>
+                <Text style={s.unavailable}>{t.soldOut}</Text>
               ) : data.cart[p.id] ? (
                 <Text style={s.added} accessibilityLiveRegion="polite">
-                  {data.cart[p.id]} no carrinho
+                  {t.inCart(data.cart[p.id])}
                 </Text>
               ) : null}
             </Animated.View>
@@ -163,8 +166,7 @@ export default function Catalog() {
         </View>
       )}
       <Text style={styles.note}>
-        Demonstração de portfólio. Produtos e preços fictícios; nenhum pedido é
-        enviado à loja.
+        {t.note}
       </Text>
     </Screen>
   );

@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
 import { Image, Pressable, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
-import { cartTotal, countItems, money, products } from "../../domain";
+import { cartTotal, countItems, products } from "../../domain";
+import { useLang } from "../../i18n";
 import { useStore } from "../../store";
 import { Button, colors, Icon, images, Screen, styles } from "../../ui";
 export default function CartScreen() {
@@ -9,7 +10,9 @@ export default function CartScreen() {
   const nameInput = useRef<TextInput>(null);
   const [name, setName] = useState("");
   const [note, setNote] = useState("");
-  const items = products.filter((p) => data.cart[p.id]);
+  const { t: d, productText, money, error: tr } = useLang();
+  const t = d.cart;
+  const items = products.filter((p) => data.cart[p.id]).map((p) => ({ ...p, ...productText(p.id, p) }));
   async function submit() {
     if (await checkout(name, note)) {
       setName("");
@@ -19,19 +22,19 @@ export default function CartScreen() {
   }
   return (
     <Screen
-      title="Seu carrinho"
-      subtitle="Escolhido por você, preparado com cuidado."
+      title={t.title}
+      subtitle={t.subtitle}
       showError={false}
     >
       {!items.length ? (
         <View style={styles.empty}>
           <Icon name="shopping-bag" size={44} />
-          <Text style={styles.heading}>Sua próxima descoberta está aqui</Text>
+          <Text style={styles.heading}>{t.emptyTitle}</Text>
           <Text style={styles.body}>
-            Explore o catálogo e adicione suas peças favoritas.
+            {t.emptyText}
           </Text>
           <Button
-            label="Explorar catálogo"
+            label={t.explore}
             onPress={() => router.replace("/")}
           />
         </View>
@@ -65,7 +68,7 @@ export default function CartScreen() {
                       <Pressable
                         key={delta}
                         accessibilityRole="button"
-                        accessibilityLabel={`${delta < 0 ? "Diminuir" : "Aumentar"} quantidade de ${p.name}`}
+                        accessibilityLabel={t.change(delta > 0, p.name)}
                         disabled={busy || (delta > 0 && data.cart[p.id] >= 20)}
                         onPress={() => void quantity(p.id, delta)}
                         style={{
@@ -87,7 +90,7 @@ export default function CartScreen() {
                               button,
                               <Text
                                 key="quantity"
-                                accessibilityLabel={`Quantidade de ${p.name}: ${data.cart[p.id]}`}
+                                accessibilityLabel={t.qty(p.name, data.cart[p.id])}
                                 style={styles.label}
                               >
                                 {data.cart[p.id]}
@@ -106,37 +109,36 @@ export default function CartScreen() {
           ))}
           <View style={styles.row}>
             <Text style={styles.body}>
-              Subtotal · {countItems(data.cart)} itens
+              {t.subtotal(countItems(data.cart))}
             </Text>
             <Text style={styles.heading}>{money(cartTotal(data.cart))}</Text>
           </View>
           <Text style={styles.note}>
-            Retirada na loja · sem taxa. Pedido demonstrativo: sem pagamento e
-            sem envio à loja.
+            {t.pickup}
           </Text>
           <View>
-            <Text style={styles.label}>Nome para retirada *</Text>
+            <Text style={styles.label}>{t.name} *</Text>
             <TextInput
               ref={nameInput}
-              accessibilityLabel="Nome para retirada"
+              accessibilityLabel={t.name}
               value={name}
               onChangeText={setName}
-              placeholder="Use um nome fictício"
+              placeholder={t.namePh}
               placeholderTextColor={colors.muted}
               maxLength={80}
               style={styles.input}
             />
             <Text style={styles.subtitle}>
-              Obrigatório: de 2 a 80 caracteres.
+              {t.nameHint}
             </Text>
           </View>
           <View>
-            <Text style={styles.label}>Observação (opcional)</Text>
+            <Text style={styles.label}>{t.noteLabel}</Text>
             <TextInput
-              accessibilityLabel="Observação"
+              accessibilityLabel={t.noteA11y}
               value={note}
               onChangeText={setNote}
-              placeholder="Ex.: embrulhar para presente"
+              placeholder={t.notePh}
               placeholderTextColor={colors.muted}
               maxLength={300}
               multiline
@@ -145,21 +147,20 @@ export default function CartScreen() {
                 { minHeight: 94, textAlignVertical: "top" },
               ]}
             />
-            <Text style={styles.subtitle}>{note.length}/300 caracteres</Text>
+            <Text style={styles.subtitle}>{t.chars(note.length)}</Text>
           </View>
           {error ? (
             <Text accessibilityRole="alert" style={styles.error}>
-              {error}
+              {tr(error)}
             </Text>
           ) : null}
           <Button
-            label={busy ? "Salvando pedido…" : "Criar pedido demonstrativo"}
+            label={busy ? t.saving : t.create}
             disabled={busy || !ready}
             onPress={() => void submit()}
           />
           <Text style={styles.body}>
-            Seus dados ficam apenas neste aparelho, sem criptografia. Não use
-            informações pessoais reais.
+            {t.privacy}
           </Text>
         </>
       )}

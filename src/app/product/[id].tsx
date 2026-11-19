@@ -1,33 +1,37 @@
 import { Image, Text, View, Pressable } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { products, money } from "../../domain";
+import { products } from "../../domain";
+import { useLang } from "../../i18n";
 import { useStore } from "../../store";
 import { Button, Icon, images, Screen, styles } from "../../ui";
 export default function ProductDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const product = products.find((p) => p.id === id);
+  const base = products.find((p) => p.id === id);
   const { quantity, busy, ready, data } = useStore();
+  const { t: d, productText, money } = useLang();
+  const t = d.product;
+  const product = base && { ...base, ...productText(base.id, base) };
   if (!product)
     return (
-      <Screen title="Peça não encontrada">
+      <Screen title={t.notFound}>
         <Button
-          label="Voltar ao catálogo"
+          label={t.back}
           onPress={() => router.replace("/")}
         />
       </Screen>
     );
   return (
-    <Screen title={product.name} subtitle={product.category}>
+    <Screen title={product.name} subtitle={d.categories[product.category]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Voltar ao catálogo"
+        accessibilityLabel={t.back}
         onPress={() =>
           router.canGoBack() ? router.back() : router.replace("/")
         }
         style={[styles.row, { alignSelf: "flex-start", minHeight: 44 }]}
       >
         <Icon name="arrow-left" />
-        <Text style={styles.body}>Catálogo</Text>
+        <Text style={styles.body}>{t.catalog}</Text>
       </Pressable>
       <Image
         source={images[product.image]}
@@ -37,16 +41,15 @@ export default function ProductDetail() {
       <View style={styles.row}>
         <Text style={styles.heading}>{money(product.price)}</Text>
         <Text style={styles.body}>
-          {product.available ? "Disponível" : "Esgotado"}
+          {product.available ? t.available : t.soldOut}
         </Text>
       </View>
       <Text style={styles.body}>{product.description}</Text>
       <Text style={styles.note}>
-        Retirada na loja fictícia, sem taxa. Este app não processa pagamentos
-        nem envia pedidos reais.
+        {t.pickup}
       </Text>
       <Button
-        label="Adicionar ao carrinho"
+        label={t.add}
         disabled={
           !product.available ||
           !ready ||
@@ -57,11 +60,11 @@ export default function ProductDetail() {
       />
       <Text accessibilityLiveRegion="polite" style={styles.body}>
         {data.cart[product.id]
-          ? `${data.cart[product.id]} unidade(s) no carrinho`
-          : "Escolha sua peça e monte seu pedido."}
+          ? t.units(data.cart[product.id])
+          : t.choose}
       </Text>
       <Button
-        label="Ver carrinho"
+        label={t.seeCart}
         secondary
         onPress={() => router.push("/cart")}
       />

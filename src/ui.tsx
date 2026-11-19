@@ -3,6 +3,7 @@ import {
   StyleSheet,
   Text,
   Pressable,
+  View,
   ScrollView,
   type ViewStyle,
   type StyleProp,
@@ -11,6 +12,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { useStore } from "./store";
+import { LANGS, langLabel, useLang } from "./i18n";
 // Vitrine v2: ceramic-studio palette (clay + sand) for the Casa Lume demo store.
 export const colors = {
   ink: "#2A1E17",
@@ -85,12 +87,21 @@ export function Screen({
   showError?: boolean;
 }) {
   const { error, ready } = useStore();
+  const { t, lang, setLang, error: tr } = useLang();
   return (
     <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.screen, style]}
       >
+        <View accessibilityRole="radiogroup" accessibilityLabel={t.language} style={{ flexDirection: "row", alignSelf: "flex-end", gap: 4 }}>
+          {LANGS.map((l) => (
+            <Pressable key={l} accessibilityRole="radio" accessibilityLabel={langLabel[l]} accessibilityState={{ checked: l === lang }} onPress={() => setLang(l)}
+              style={{ minWidth: 44, minHeight: 36, paddingHorizontal: 8, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: l === lang ? colors.plum : "transparent" }}>
+              <Text style={{ fontSize: 12, fontWeight: "700", textTransform: "uppercase", color: l === lang ? colors.white : colors.muted }}>{l}</Text>
+            </Pressable>
+          ))}
+        </View>
         <Animated.View entering={FadeInDown.duration(500).springify()}>
           <Text accessibilityRole="header" style={styles.title}>
             {title}
@@ -98,11 +109,11 @@ export function Screen({
           {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
         </Animated.View>
         {!ready ? (
-          <Text accessibilityLiveRegion="polite">Carregando seus dados…</Text>
+          <Text accessibilityLiveRegion="polite">{t.loading}</Text>
         ) : null}
         {showError && error ? (
           <Text accessibilityRole="alert" style={styles.error}>
-            {error}
+            {tr(error)}
           </Text>
         ) : null}
         {children}
